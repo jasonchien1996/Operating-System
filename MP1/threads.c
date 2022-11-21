@@ -8,7 +8,6 @@ static struct thread* current_thread = NULL;
 static struct thread* root_thread = NULL;
 static int id = 1;
 static jmp_buf env_st;
-//static jmp_buf env_tmp;
 // TODO: necessary declares, if any
 
 void preorder(struct thread *t){
@@ -26,7 +25,6 @@ void traverse(struct thread *t){
 
 struct thread *thread_create(void (*f)(void *), void *arg){
     struct thread *t = (struct thread*) malloc(sizeof(struct thread));
-    //unsigned long stack_p = 0;
     unsigned long new_stack_p;
     unsigned long new_stack;
     new_stack = (unsigned long) malloc(sizeof(unsigned long)*0x100);
@@ -44,6 +42,7 @@ struct thread *thread_create(void (*f)(void *), void *arg){
     return t;
 }
 
+// insert t into the runqueue according to the rules
 void thread_add_runqueue(struct thread *t){
     if(root_thread == NULL)
         root_thread = t;
@@ -60,6 +59,7 @@ void thread_add_runqueue(struct thread *t){
             current_thread->right = t;
             t->parent = current_thread;
         }
+        // discard t if both left and right children are not NULL
         else{
             free(t->stack);
             free(t);
@@ -69,6 +69,7 @@ void thread_add_runqueue(struct thread *t){
 }
 
 void thread_yield(void){
+    // set where to resume and save context
     int ret = setjmp(current_thread->env);
     if(ret == 0){
         schedule();
@@ -77,12 +78,18 @@ void thread_yield(void){
 }
 
 void dispatch(void){
+    // first dispatch of the thread
     if(current_thread->buf_set == 0){
+        /*
         int ret = setjmp(current_thread->env);
         if(ret == 0){
             current_thread->env->sp = (unsigned long)current_thread->stack_p;
             longjmp(current_thread->env, 1);
         }
+        */
+        setjmp(current_thread->env);
+        current_thread->env->sp = (unsigned long)current_thread->stack_p;
+        
         current_thread->buf_set = 1;
         current_thread->fp(current_thread->arg);
     }
@@ -91,6 +98,7 @@ void dispatch(void){
     thread_exit();
 }
 
+// select new "current_thread" by preorder
 void schedule(void){
     if(current_thread->left != NULL) current_thread = current_thread->left;
     else if(current_thread->right != NULL) current_thread = current_thread->right;
@@ -112,16 +120,19 @@ void schedule(void){
     }
 }
 
+// remove "current_thread" from the tree according to the rules
+// call schedule() to find the next thread to be executed and call dispatch()
 void thread_exit(void){
-    // No more thread to execute
+    // no thread left to execute
     if(current_thread == root_thread && current_thread->left == NULL && current_thread->right == NULL){
         free(current_thread->stack);
         free(current_thread);
         // return to main
         longjmp(env_st, 1);
     }
+    // remove "current_thread"
     else{
-        // find the "last" preorder node
+        // find the "last" preorder node of the subtree rooted at "current_thread"
         struct thread *last = current_thread;
         while(1){
             if(last->right != NULL){
@@ -134,7 +145,7 @@ void thread_exit(void){
             }
             break;
         }
-        //leaf
+        // if "current_thread" is a leaf, remove it from the tree
         if(last == current_thread){
             schedule();
             
@@ -148,7 +159,7 @@ void thread_exit(void){
             
             dispatch();
         }
-        // need to be replaced
+        // "current_thread" is not a leaf, and we replace it with "last"
         else{
             if(last->parent->left == last)
                 last->parent->left = NULL;
@@ -186,8 +197,10 @@ void thread_exit(void){
     }
 }
 
+// called by the main function
 void thread_start_threading(void){
     current_thread = root_thread;
+    // return if all threads have exited
     int ret = setjmp(env_st);
     if(ret==0) dispatch();
 }
