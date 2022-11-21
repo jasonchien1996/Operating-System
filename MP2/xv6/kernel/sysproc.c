@@ -53,13 +53,14 @@ sys_sbrk(void)
   addr = sz-1;
   
   if(n>0){
-    //printf("get positive n=%d\n", n);
+    // find the section of address, i.e. [first, last], to be lazily allocated 
     uint64 first, last;
     if(addr==-1) first = 0;
     else if(addr%PGSIZE==0) first = PGROUNDUP(addr+1);
     else first = PGROUNDUP(addr);
     last = PGROUNDDOWN(addr+n);
     
+    // modify the page table entries corresponding to [first, last]
     pte_t *pte;   
     for(uint64 a=first; a<=last; a+=PGSIZE){
       if((pte = walk(p->pagetable, a, 1)) == 0) return -1;
@@ -69,7 +70,7 @@ sys_sbrk(void)
   }
   
   else if(n<0){
-    //printf("get negative n=%d\n", n);
+    // find the section of address, i.e. [first, last], to be freed
     uint64 first, last;
     last = PGROUNDDOWN(addr);
     addr = addr+n;
