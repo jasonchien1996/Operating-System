@@ -22,12 +22,12 @@ int handle_pgfault() {
   if(*pte&PTE_S){ 
     uint blockno = (uint)PTE2BLOCKNO(*pte);
         
-    //swap the page to RAM
+    // swap the page to RAM
     begin_op();
     read_page_from_disk(ROOTDEV, pa, blockno);
     bfree_page(ROOTDEV, blockno);
     end_op();
-
+    
     uint64 mask = 0b1111111111000000000000000000000000000000000000000000001111111111;
     *pte = (*pte&mask)|PA2PTE((uint64)pa);
     *pte = (*pte ^ PTE_S) | PTE_V;        
