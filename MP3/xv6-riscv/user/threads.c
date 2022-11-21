@@ -217,7 +217,9 @@ void schedule(void){
     #endif
 
     #ifdef THREAD_SCHEDULER_RR
+    // the first thread is trivial
     if( is_thread_start == 0 ) return ;
+    // execute the next thread every 3 time quantum
     else
     {
         if(current_thread->is_exited || current_thread->is_yield)
@@ -232,6 +234,7 @@ void schedule(void){
     #endif
 
     #ifdef THREAD_SCHEDULER_FCFS
+    // the first thread is trivial
     if( is_thread_start == 0 ) return ;
     else
     {
@@ -240,7 +243,7 @@ void schedule(void){
     #endif
 
     #ifdef THREAD_SCHEDULER_SJF
-    //printf("schedule\n");
+    // determine the first thread
     if( is_thread_start == 0 ){
         struct thread *it, *less;
         it = current_thread->next;
@@ -248,7 +251,7 @@ void schedule(void){
         while(it != current_thread){
             if( it->remain_execution_time < less->remain_execution_time)
                 less = it;
-            else if(it->remain_execution_time < less->remain_execution_time && it->ID < less->ID)
+            else if(it->remain_execution_time == less->remain_execution_time && it->ID < less->ID)
                 less = it;
             it = it->next;
         }
@@ -269,7 +272,7 @@ void schedule(void){
         while(it != current_thread){
             if( it->remain_execution_time < less->remain_execution_time)
                 less = it;
-            else if(it->remain_execution_time < less->remain_execution_time && it->ID < less->ID)
+            else if(it->remain_execution_time == less->remain_execution_time && it->ID < less->ID)
                 less = it;
             it = it->next;
         }
@@ -278,7 +281,7 @@ void schedule(void){
     #endif
 
     #ifdef THREAD_SCHEDULER_PSJF
-    //printf("schedule\n");
+    // determine the first thread
     if( is_thread_start == 0 ){
         struct thread *it, *less;
         it = current_thread->next;
@@ -286,7 +289,7 @@ void schedule(void){
         while(it != current_thread){
             if( it->remain_execution_time < less->remain_execution_time)
                 less = it;
-            else if(it->remain_execution_time < less->remain_execution_time && it->ID < less->ID)
+            else if(it->remain_execution_time == less->remain_execution_time && it->ID < less->ID)
                 less = it;
             it = it->next;
         }
@@ -299,6 +302,7 @@ void schedule(void){
             it = current_thread->next->next;
             less = current_thread->next;
         }
+        // the thread yields or every time quantum passes
         else{
             it = current_thread->next;
             less = current_thread;
@@ -306,13 +310,12 @@ void schedule(void){
         while(it != current_thread){
             if( it->remain_execution_time < less->remain_execution_time)
                 less = it;
-            else if(it->remain_execution_time < less->remain_execution_time && it->ID < less->ID)
+            else if(it->remain_execution_time == less->remain_execution_time && it->ID < less->ID)
                 less = it;
             it = it->next;
         }
         current_thread = less;
     }
-    //printf("thread ID %d\n", current_thread->ID);
     #endif
 
 }
