@@ -19,6 +19,7 @@ int handle_pgfault() {
   struct proc *p = myproc();
   pte_t *pte = walk(p->pagetable, va,1);
   
+  // the page is in disk
   if(*pte&PTE_S){ 
     uint blockno = (uint)PTE2BLOCKNO(*pte);
         
@@ -32,8 +33,10 @@ int handle_pgfault() {
     *pte = (*pte&mask)|PA2PTE((uint64)pa);
     *pte = (*pte ^ PTE_S) | PTE_V;        
   }
+  // lazy allocation
   else{  
     if(mappages(p->pagetable, va, PGSIZE, (uint64)pa, PTE_W|PTE_X|PTE_R|PTE_U) != 0){
+      // if creating page entry fails
       kfree(pa);
       return 0;
     }
